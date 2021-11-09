@@ -1,0 +1,217 @@
+<div class='tituloPagina'>{{ Titulo }}</div>
+
+<form [formGroup]="FormBusqueda">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label"> Fecha desde: </label>
+      </div>
+      <div class="col-sm-8 col-md-6">
+        <div class="input-group inputMedio">
+          <input
+        class="form-control"
+        placeholder="dd/mm/aaaa"
+        formControlName="FechaDesde"
+        ngbDatepicker
+        [minDate]="{year: 2010, month: 1, day: 1}"
+        [maxDate]="{year: 2031, month: 1, day: 1}"
+        #RefFechaDesde="ngbDatepicker"
+        [ngClass]="{ 'is-invalid': FormBusqueda.controls.FechaDesde.errors }"
+      />
+          <div class="input-group-append">
+            <button
+          class="btn btn-outline-secondary"
+          (click)="RefFechaDesde.toggle()"
+          type="button"
+        >
+          <i class="fa fa-calendar" aria-hidden="true"></i>
+        </button>
+          </div>
+        </div>
+        <div class="validacion" *ngIf="
+            FormBusqueda.controls.FechaDesde.errors
+          ">
+          Dato fecha, formato dd/mm/aaaa. Año > 2000
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-4 col-md-3 offset-md-1">
+        <label class="col-form-label"> Fecha hasta: </label>
+      </div>
+      <div class="col-sm-8 col-md-6">
+        <div class="input-group inputMedio">
+          <input
+        class="form-control"
+        placeholder="dd/mm/aaaa"
+        formControlName="FechaHasta"
+        ngbDatepicker
+        [minDate]="minDate_fh"
+        [maxDate]="{year: 2031, month: 1, day: 1}"
+        #RefFechaHasta="ngbDatepicker"
+        [ngClass]="{ 'is-invalid': FormBusqueda.controls.FechaHasta.errors }"
+      />
+          <div class="input-group-append">
+            <button
+          class="btn btn-outline-secondary"
+          (click)="RefFechaHasta.toggle()"
+          type="button"
+        >
+          <i class="fa fa-calendar" aria-hidden="true"></i>
+        </button>
+          </div>
+        </div>
+        <div class="validacion" *ngIf="
+            FormBusqueda.controls.FechaHasta.errors
+          ">
+          Dato fecha, formato dd/mm/aaaa. Año > 2000
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-4 col-md-3 offset-md-1">
+        <label class="col-form-label"> Cliente: </label>
+      </div>
+
+      <div class="col-sm-8 col-md-6">
+        <div class="input-group">
+          <div class="input-group-prepend"
+            ngbTooltip="Busqueda progresiva segun texto ingresado, al menos 3 caracteres...">
+            <div class="input-group-text"> <i class="fas fa-search"></i></div>
+          </div>
+          <input
+          type="text"
+          placeholder="escriba aqui para buscar"
+          class="form-control"
+          #refCliente
+          [ngbTypeahead]="typeAheadSearch_cli"
+          (selectItem)="typeAheadselectItem_cli($event, refCliente)"
+          (blur)="typeAheadBlur_cli(refCliente)"
+
+          [inputFormatter]="typeAheadformatter_cli"
+          [resultTemplate]="rt_cli"
+        />
+          <div class="input-group-append  ml-2" (click)="VerInfoCliente()" ngbTooltip="mas informacion...">
+            <div class="input-group-text"> <i class="fas fa-info-circle"></i></div>
+          </div>
+
+          <ng-template #rt_cli let-r="result" let-t="term">
+            <div class="row">
+              <div class="col">
+                <ngb-highlight [result]="r.Nombre" [term]="t"></ngb-highlight>
+              </div>
+              <div class="col text-right">
+                <span> Cuit: {{r.Cuit }} </span>
+              </div>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+
+    <!-- botones -->
+    <hr>
+    <div class="row justify-content-center">
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="Pagina = 1; Buscar()"
+      >
+        <i class="fas fa-search"> </i> Buscar
+      </button>
+    </div>
+  </div>
+</form>
+
+<div id="divTablaResultados" *ngIf="Items?.length > 0">
+  <table class="table table-hover table-sm table-bordered table-striped">
+    <thead>
+      <tr>
+        <th class="text-center">Fecha</th>
+        <th class="text-center">Cliente</th>
+        <th class="text-center">Total</th>
+        <th class="text-center text-nowrap">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of Items">
+        <td>{{ item.Fecha | date: "dd/MM/yyyy HH:mm" }}</td>
+        <td>{{ item.ClienteNombre | uppercase }}</td>
+        <td class="text-right">{{ item.Total | currency: "$" }}</td>
+        <td class="text-center text-nowrap">
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-info"
+            title="Ver Detalle"
+            (click)="VerDetalle(item)"
+          >
+            <i class="fas fa-search"></i>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Paginador-->
+  <div class="paginador">
+    <div class="row">
+      <div class="col">
+        <span class="pyBadge">Registros: {{RegistrosTotal}}</span>
+      </div>
+      <div class="col text-center">
+        <ngb-pagination [(page)]="Pagina" (pageChange)="Buscar()" [pageSize]="5" [maxSize]="10"
+          [collectionSize]="RegistrosTotal"></ngb-pagination>
+      </div>
+      <div class="col text-right">
+        <button class="btn btn-primary" (click)="ImprimirListado()"><i class="fas fa-print"></i>
+                    Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="alert alert-primary" role="alert" *ngIf="Items?.length == 0">
+  No se encontraron registros segun el criterio de busqueda seleccionado!
+</div>
+
+<div id="divVentasDetalles" *ngIf="ItemsDetalles?.length > 0">
+  <br />
+  <div class="subtitulo subtituloTabla"><i class="fas fa-file-invoice-dollar"></i>
+    <i>
+      Detalle de venta del {{ this.ItemSeleccionado.Fecha | date: "dd/MM/yyyy"
+      }} de {{ this.ItemSeleccionado.ClienteNombre }}
+      </i>
+  </div>
+  <table class="table table-hover table-sm table-bordered table-striped">
+    <thead>
+      <tr>
+        <th class="text-center">Articulo</th>
+        <th class="text-center">Cantidad</th>
+        <th class="text-center">Precio</th>
+        <th class="text-center">Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of ItemsDetalles">
+        <td>{{ item.ArticuloNombre | uppercase }}</td>
+        <td class="text-right">{{ item.Cantidad | number }}</td>
+        <td class="text-right">{{ item.Precio | currency: "$" }}</td>
+        <td class="text-right">
+          {{ item.Precio * item.Cantidad | currency: "$" }}
+        </td>
+      </tr>
+      <tr>
+        <th></th>
+        <th class="text-right">
+          <span class="pyBadge">
+            Items &nbsp;&nbsp; {{ ItemsContador }}</span>
+        </th>
+        <th></th>
+        <th class="text-right">
+          <span class="pyBadge"
+            >Total &nbsp;&nbsp; {{ ItemSeleccionado.Total | currency: "$"
+            }}</span>
+        </th>
+      </tr>
+    </tbody>
+  </table>
+</div>

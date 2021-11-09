@@ -1,0 +1,26 @@
+<div class='tituloPagina'>
+  {{Titulo}}
+</div>
+
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-2"></div>
+    <div class="col-8">
+      <table class="table table-hover table-sm table-bordered table-striped">
+        <thead>
+          <tr>
+            <th class="text-center">IdArticuloFamilia</th>
+            <th class="text-center">Nombre</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let item of Items">
+            <td>{{item.IdArticuloFamilia}}</td>
+            <td>{{item.Nombre | uppercase}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="col-2"></div>
+  </div>
+</div>

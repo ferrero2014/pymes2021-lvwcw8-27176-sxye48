@@ -1,0 +1,46 @@
+<div class="modal-header modal-header-custom">
+  <h4 class="modal-title" id="modal-basic-title">Cliente informacion</h4>
+  <!-- <button type="button" class="close" aria-label="Close" (click)="modal.dismiss('boton cerrar')"> -->
+  <button type="button" class="close" aria-label="Close" (click)="activeModal.dismiss('boton cerrar')" >
+            <span aria-hidden="true">&times;</span>
+        </button>
+</div>
+<div class="modal-body">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-3 offset-1">
+        <label class="col-form-label">
+      IdCliente:
+    </label>
+      </div>
+      <div class="col-7">
+        <input type="text" class="form-control" value="{{Cliente?.IdCliente}}" disabled>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-3 offset-1">
+        <label class="col-form-label">
+      Razon Social:
+    </label>
+      </div>
+      <div class="col-7">
+        <input type="text" class="form-control" value="{{Cliente?.Nombre}}" disabled>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-3 offset-1">
+        <label class="col-form-label">
+      Cuit:
+    </label>
+      </div>
+      <div class="col-7">
+        <input type="text" class="form-control" value="{{Cliente?.Cuit}}" disabled>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="modal-footer">
+  <!-- <button type="button" class="btn btn-outline-dark" (click)="modal.close('boton salir')">Salir</button> -->
+  <button type="button" class="btn btn-outline-dark" (click)="activeModal.close(true)">Salir</button>
+</div>

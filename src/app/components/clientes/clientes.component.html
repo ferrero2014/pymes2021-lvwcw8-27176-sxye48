@@ -1,0 +1,848 @@
+<div class='tituloPagina'>
+  {{ Titulo }} <small>{{ TituloAccionABMC[AccionABMC] }}</small>
+</div>
+<!-- Formulario Filtro de busqueda, visible  cuando  AccionABMC es Listado (busqueda/listado)-->
+<form name="FormBusqueda" [formGroup]="FormBusqueda" *ngIf="AccionABMC == 'L'">
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-sm-4 col-md-2">
+        <label class="col-form-label"> Nombre: </label>
+      </div>
+      <div class="col-sm-8 col-md-4">
+        <input
+        type="text"
+        name="Nombre"
+        class="form-control"
+        formControlName="Nombre"
+        maxlength="55"
+      />
+      </div>
+      <div class="col-sm-4 col-md-2">
+        <label class="col-form-label"> Activo: </label>
+      </div>
+      <div class="col-sm-8 col-md-4">
+        <select class="form-control" name="Activo" formControlName="Activo">
+        <option *ngFor="let opt of OpcionesActivo" [ngValue]="opt.Id">
+          ‌{{ opt.Nombre }}
+        </option>
+      </select>
+      </div>
+    </div>
+    <!-- Botones -->
+    <hr>
+    <div class="row justify-content-center botones">
+      <button type="button" class="btn btn-primary" (click)="Pagina = 1; Buscar()">
+        <i class="fas fa-search"> </i> Buscar
+      </button>
+      <button type="button" class="btn btn-primary" (click)="Agregar()">
+        <i class="fas fa-plus"> </i>
+      Agregar
+    </button>
+    </div>
+  </div>
+</form>
+
+<!-- Tabla de resutados de busqueda y Paginador-->
+<div *ngIf="AccionABMC == 'L' && Items?.length > 0" [ngClass]="{'rainbow':buscando}">
+  <table class="table table-hover table-sm table-bordered table-striped">
+    <thead>
+      <tr>
+        <th class="text-center">Nombre</th>
+        <th class="text-center">Cuit</th>
+        <th class="text-center">Credito Maximo</th>
+        <th class="text-center">Fecha Ingreso</th>
+        <th class="text-center">Activo</th>
+        <th class="text-center text-nowrap">Acciones</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let Item of Items">
+        <td>{{ Item.Nombre | uppercase }}</td>
+        <td class="text-right">{{ Item.Cuit }}</td>
+        <td class="text-right">{{ Item.CreditoMaximo | currency: "$" }}</td>
+        <td class="text-right">{{ Item.FechaIngreso | date: "dd/MM/yyyy" }}</td>
+        <td>{{ Item.Activo ? "SI" : "NO" }}</td>
+        <td class="text-center text-nowrap">
+          <button type="button"
+            class="btn btn-sm btn-outline-primary"
+            title="Consultar"
+            (click)="Consultar(Item)"
+          >
+            <div class="fas fa-eye"></div>
+          </button>
+          <button type="button"
+            class="btn btn-sm btn-outline-primary"
+            title="Modificar"
+            (click)="Modificar(Item)"
+          >
+            <div class="fas fa-pencil-alt"></div>
+          </button>
+          <button type="button"
+            class="btn btn-sm"
+            [ngClass]="{
+              'btn-outline-danger': Item.Activo,
+              'btn-outline-success': !Item.Activo
+            }"
+            title="{{ Item.Activo ? 'Desactivar' : 'Activar' }}"
+            (click)="ActivarDesactivar(Item)"
+          >
+            <div class="fas fa-{{ Item.Activo ? 'times' : 'check' }}"></div>
+          </button>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- Paginador-->
+  <div class="paginador">
+    <div class="row">
+      <div class="col">
+        <div class="pyBadge">Registros: {{RegistrosTotal}}</div>
+      </div>
+      <div class="col text-center">
+        <ngb-pagination [(page)]="Pagina" (pageChange)="Buscar()" [pageSize]="10" [maxSize]="10"
+          [collectionSize]="RegistrosTotal"></ngb-pagination>
+      </div>
+      <div class="col text-right">
+        <button type="button" class="btn btn-primary" (click)="ImprimirListado()"><div class="fas fa-print"></div>
+                    Imprimir</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!--Mensaje: No se encontraron registros-->
+<div class="alert alert-info mensajesAlert" *ngIf="AccionABMC == 'L' && Items?.length == 0">
+  <i class="fas fa-exclamation-sign"></i> {{ Mensajes["SD"] }}
+</div>
+
+<!--Formulario Registro: visible en Alta, Modificacion y Consulta -->
+<form name="FormRegistro" [formGroup]="FormRegistro" *ngIf="AccionABMC != 'L'">
+  <div class="container-fluid">
+    <fieldset [disabled]="AccionABMC == 'C'">
+      <div class="row">
+        <div class="subtitulo col"><i class="fas fa-user-alt"></i>Datos Personales</div>
+      </div>
+      <!--campo nombre-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label" for="Nombre">
+        Nombre<span class="text-danger">*</span>:</label>
+        </div>
+        <div class="col-sm-8 col-md-6">
+          <input
+          type="text"
+          class="form-control"
+          formControlName="Nombre"
+          placeholder="Apellidos, Nombres"
+          [ngClass]="cssValid('Nombre')"
+        />
+          <!-- <div class="validacion">
+            {{ getError('Nombre')}}
+          </div> -->
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.Nombre.touched || submitted) &&
+            FormRegistro.controls.Nombre.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            FormRegistro.controls.Nombre.errors?.minlength ||
+            FormRegistro.controls.Nombre.errors?.maxlength
+          ">
+            Dato texto, 4 a 55 caracteres.
+          </div>
+        </div>
+      </div>
+
+      <!--campo IdTipoDocumento-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1">
+          <label class="col-form-label" for="IdTipoDocumento">
+        Tipo Documento<span class="text-danger">*</span>:
+          </label>
+        </div>
+        <div class="col-sm-8 col-md-6">
+          <select
+          name="IdTipoDocumento"
+          class="form-control"
+          formControlName="IdTipoDocumento"
+          [ngClass]="cssValid('IdTipoDocumento')"
+        >
+          <option
+            *ngFor="let opt of TiposDocumentos"
+            [ngValue]="opt.IdTipoDocumento"
+          >
+            ‌{{ opt.Nombre }}
+          </option>
+
+          <option></option>
+        </select>
+
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.IdTipoDocumento.touched || submitted) &&
+            FormRegistro.controls.IdTipoDocumento.errors?.required
+          ">
+            Dato requerido.
+          </div>
+        </div>
+      </div>
+
+      <!--campo NumeroDocumento-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label" for="NumeroDocumento">
+        Numero de Documento<span class="text-danger">*</span>:
+      </label></div>
+        <div class="col-sm-8 col-md-6">
+          <input
+          type="text"
+          name="NumeroDocumento"
+          class="form-control inputMedio"
+          formControlName="NumeroDocumento"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.NumeroDocumento.touched || submitted) &&
+              FormRegistro.controls.NumeroDocumento.errors,
+            'is-valid': FormRegistro.controls.NumeroDocumento.valid
+          }"
+        />
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.NumeroDocumento.touched || submitted) &&
+            FormRegistro.controls.NumeroDocumento.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="FormRegistro.controls.NumeroDocumento.errors?.pattern">
+            Dato numérico, 6 a 10 dígitos sin guiones.
+          </div>
+        </div>
+      </div>
+
+      <!--Sexo-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1">
+          <label class="col-form-label">Sexo<span class="text-danger">*</span>:</label>
+        </div>
+        <div class="col-6">
+          <div class="custom-control custom-radio" *ngFor="let opt of Sexos">
+            <input
+            class="custom-control-input"
+            type="radio"
+            name="IdSexo"
+            value="{{ opt.IdSexo }}"
+            id="{{ 'IdSexo' + opt.IdSexo }}"
+            formControlName="IdSexo"
+            [ngClass]="{
+              'is-invalid':
+                (FormRegistro.controls.IdSexo.touched || submitted) &&
+                FormRegistro.controls.IdSexo.errors
+            }"
+          />
+            <label class="custom-control-label" for="{{ 'IdSexo' + opt.IdSexo }}">
+            {{ opt.Nombre }}
+          </label>
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.IdSexo.touched || submitted) &&
+            FormRegistro.controls.IdSexo.errors?.required
+          ">
+            Dato requerido.
+          </div>
+        </div>
+      </div>
+
+      <!--campo FechaNacimiento-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label"
+        >Fecha de Nacimiento<span class="text-danger">*</span>:</label>
+        </div>
+        <div class="col-sm-8 col-md-6">
+          <div class="input-group inputMedio">
+            <input
+        class="form-control"
+        placeholder="dd/mm/aaaa"
+        formControlName="FechaNacimiento"
+        ngbDatepicker
+        [minDate]="{year: 1900, month: 1, day: 1}"
+        [maxDate]="{year: 2031, month: 1, day: 1}"
+        #RefFechaNacimiento="ngbDatepicker"
+        [ngClass]="{ 'is-invalid': (FormRegistro.controls.FechaNacimiento.touched || submitted) &&
+                FormRegistro.controls.FechaNacimiento.errors,
+            'is-valid': FormRegistro.controls.FechaNacimiento.valid
+         }"
+      />
+            <div class="input-group-append">
+              <button type="button"
+          class="btn btn-outline-secondary"
+          (click)="RefFechaNacimiento.toggle()"
+
+        >
+          <i class="fa fa-calendar" aria-hidden="true"></i>
+        </button>
+            </div>
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.FechaNacimiento.touched || submitted) &&
+            FormRegistro.controls.FechaNacimiento.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            FormRegistro.controls.FechaNacimiento.errors?.ngbDate
+          ">
+            Dato fecha, formato dd/mm/aaaa. Año >= 1900
+          </div>
+        </div>
+      </div>
+
+      <!--campo IdEstadoCivil-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label" for="IdEstadoCivil">
+        Estado civil<span class="text-danger">*</span>:
+      </label></div>
+        <div class="col-sm-8 col-md-6">
+          <select
+          name="IdEstadoCivil"
+          class="form-control"
+          formControlName="IdEstadoCivil"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.IdEstadoCivil.touched || submitted) &&
+              FormRegistro.controls.IdEstadoCivil.errors,
+            'is-valid': FormRegistro.controls.IdEstadoCivil.valid
+          }"
+        >
+          <option
+            *ngFor="let opt of EstadosCiviles"
+            [ngValue]="opt.IdEstadoCivil"
+          >
+            ‌{{ opt.Nombre }}
+          </option>
+
+          <option></option>
+        </select>
+
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.IdEstadoCivil.touched || submitted) &&
+            FormRegistro.controls.IdEstadoCivil.errors?.required
+          ">
+            Dato requerido.
+          </div>
+        </div>
+      </div>
+
+      <!--campo Mail-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label" for="Cuit">
+        Mail<span class="text-danger">*</span>:
+      </label></div>
+        <div class="col-sm-8 col-md-6">
+          <input
+          type="text"
+          name="Mail"
+          class="form-control"
+          formControlName="Mail"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.Mail.touched || submitted) &&
+              FormRegistro.controls.Mail.errors,
+            'is-valid': FormRegistro.controls.Mail.valid
+          }"
+        />
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.Mail.touched || submitted) &&
+            FormRegistro.controls.Mail.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.Mail.touched || submitted) &&
+            FormRegistro.controls.Mail.errors?.email
+          ">
+            Dato email, formato usuario@servidor
+          </div>
+        </div>
+      </div>
+      <!--campo Observaciones-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label">Observaciones:</label></div>
+        <div class="col-sm-8 col-md-6">
+          <textarea
+          rows="5"
+          class="form-control is-valid"
+          formControlName="Observaciones"
+          maxlength="500"
+        ></textarea>
+          <small class="d-block text-right"
+          >{{ FormRegistro.value.Observaciones?.length || 0 }} de 500
+          caracteres</small>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="subtitulo col"><i class="fas fa-cash-register"></i>Datos Comerciales</div>
+      </div>
+
+      <!--campo Cuit-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label" for="Cuit">
+        Cuit<span class="text-danger">*</span>:
+      </label></div>
+        <div class="col-sm-8 col-md-6">
+          <input
+          type="text"
+          name="Cuit"
+          class="form-control inputMedio"
+          formControlName="Cuit"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.Cuit.touched || submitted) &&
+              FormRegistro.controls.Cuit.errors,
+            'is-valid': FormRegistro.controls.Cuit.valid
+          }"
+        />
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.Cuit.touched || submitted) &&
+            FormRegistro.controls.Cuit.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            FormRegistro.controls.Cuit.errors?.pattern
+          ">
+            Dato numérico, 11 dígitos sin guiones.
+          </div>
+        </div>
+      </div>
+
+
+      <!--Situacion Economica-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label"
+        >Situacion Economica:</label></div>
+        <div class="col-6">
+          <div class="custom-control custom-checkbox">
+            <input
+            class="custom-control-input"
+            type="checkbox"
+            id="TieneTrabajo"
+            formControlName="TieneTrabajo"
+          />
+            <label class="custom-control-label" for="TieneTrabajo">
+            Tiene Trabajo
+          </label>
+          </div>
+          <div class="custom-control custom-checkbox">
+            <input
+            class="custom-control-input"
+            type="checkbox"
+            id="TieneAuto"
+            formControlName="TieneAuto"
+          />
+            <label class="custom-control-label" for="TieneAuto">
+            Tiene Auto
+          </label>
+          </div>
+          <div class="custom-control custom-checkbox">
+            <input
+            class="custom-control-input"
+            type="checkbox"
+            id="TieneCasa"
+            formControlName="TieneCasa"
+          />
+            <label class="custom-control-label" for="TieneCasa">
+            Tiene Casa
+          </label>
+          </div>
+        </div>
+      </div>
+
+
+
+      <!--campo CreditoMaximo-->
+      <div class="row">
+        <div class="col-sm-4 col-md-3 offset-md-1"><label class="col-form-label" for="CreditoMaximo"
+        >CreditoMaximo<span class="text-danger">*</span>:</label></div>
+        <div class="col-sm-8 col-md-6">
+
+          <div class="input-group inputMedio">
+            <div class="input-group-prepend">
+              <span class="input-group-text">$</span>
+            </div>
+
+            <input
+          type="text"
+          name="CreditoMaximo"
+          class="form-control"
+          formControlName="CreditoMaximo"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.CreditoMaximo.touched || submitted) &&
+              FormRegistro.controls.CreditoMaximo.errors,
+            'is-valid': FormRegistro.controls.CreditoMaximo.valid
+          }"
+        />
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.CreditoMaximo.touched || submitted) &&
+            FormRegistro.controls.CreditoMaximo.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="FormRegistro.controls.CreditoMaximo.errors?.pattern">
+            Dato numérico, 1 a 8 dígitos mas 2 decimales opcionales, usar "."
+            como separador decimal.
+          </div>
+
+
+
+
+        </div>
+      </div>
+
+
+      <div class="row">
+        <div class="subtitulo col"><i class="fas fa-map-marked-alt"></i>Datos Domicilio</div>
+      </div>
+
+
+      <div class="row">
+        <!--campo IdPais-->
+        <div class="col-sm-4 col-md-2"><label class="col-form-label" for="IdPais">
+        Pais<span class="text-danger">*</span>:
+      </label></div>
+        <div class="col-sm-8 col-md-4">
+          <select
+          name="IdPais"
+          class="form-control"
+          formControlName="IdPais"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.IdPais.touched || submitted) &&
+              FormRegistro.controls.IdPais.errors,
+            'is-valid': FormRegistro.controls.IdPais.valid
+          }"
+        >
+          <option *ngFor="let opt of Paises" [ngValue]="opt.IdPais">
+            ‌{{ opt.Nombre }}
+          </option>
+
+          <option></option>
+        </select>
+
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.IdPais.touched || submitted) &&
+            FormRegistro.controls.IdPais.errors?.required
+          ">
+            Dato requerido.
+          </div>
+        </div>
+
+
+        <!--campo IdProvincia-->
+        <div class="col-sm-4 col-md-2"><label class="col-form-label" for="IdProvincia">
+        Provincias<span class="text-danger">*</span>:
+      </label></div>
+        <div class="col-sm-8 col-md-4">
+          <select
+          name="IdProvincia"
+          class="form-control"
+          formControlName="IdProvincia"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.IdProvincia.touched || submitted) &&
+              FormRegistro.controls.IdProvincia.errors,
+            'is-valid': FormRegistro.controls.IdProvincia.valid
+          }"
+        >
+          <option *ngFor="let opt of Provincias" [ngValue]="opt.IdProvincia">
+            ‌{{ opt.Nombre }}
+          </option>
+
+          <option></option>
+        </select>
+
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.IdProvincia.touched || submitted) &&
+            FormRegistro.controls.IdProvincia.errors?.required
+          ">
+            Dato requerido.
+          </div>
+        </div>
+
+      </div>
+
+      <div class="row">
+
+        <!-- Campo Departamento -->
+        <div class="col-sm-4 col-md-2">
+          <label class="col-form-label">
+        Departamento<span class="text-danger">*</span>:
+      </label>
+        </div>
+
+        <div class="col-sm-8 col-md-4">
+          <div class="input-group">
+            <div class="input-group-prepend"
+              ngbTooltip="Busqueda progresiva segun texto ingresado, al menos 3 caracteres...">
+              <div class="input-group-text"> <i class="fas fa-search"></i></div>
+            </div>
+            <input
+            type="text"
+            placeholder="escriba aqui para buscar"
+            class="form-control"
+            #RefDepartamento
+            formControlName="DepartamentoAux"
+            [ngbTypeahead]="typeAheadSearchDpto"
+            (selectItem)="typeAheadselectItemDpto($event, RefDepartamento)"
+            (blur)="typeAheadBlurDpto(RefDepartamento)"
+            [resultFormatter]="typeAheadformatterDpto"
+            [inputFormatter]="typeAheadformatterDpto"
+             [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.DepartamentoAux.touched || submitted) &&
+              FormRegistro.controls.IdDepartamento.invalid,
+            'is-valid': FormRegistro.controls.IdDepartamento.valid
+          }"
+          />
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.DepartamentoAux.touched || submitted) &&
+            FormRegistro.controls.DepartamentoAux.errors?.required
+          ">
+            Dato requerido.
+          </div>
+        </div>
+
+
+        <!-- Campo Localidad -->
+        <div class="col-sm-4 col-md-2"><label class="col-form-label" for="Localidad">
+        Localidad<span class="text-danger">*</span>:</label></div>
+        <div class="col-sm-8 col-md-4">
+          <input
+          type="text"
+          class="form-control"
+          formControlName="Localidad"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.Localidad.touched || submitted) &&
+              FormRegistro.controls.Localidad.invalid,
+            'is-valid': FormRegistro.controls.Localidad.valid
+          }"
+        />
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.Localidad.touched || submitted) &&
+            FormRegistro.controls.Localidad.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.Localidad.touched || submitted) &&
+            (FormRegistro.controls.Localidad.errors?.minlength ||
+              FormRegistro.controls.Localidad.errors?.maxlength)
+          ">
+            Dato texto, 5 a 255 caracteres.
+          </div>
+        </div>
+
+      </div>
+
+
+      <div class="row">
+
+        <!-- Campo Calle -->
+        <div class="col-sm-4 col-md-2"><label class="col-form-label" for="Calle">
+        Calle<span class="text-danger">*</span>:</label>
+        </div>
+        <div class="col-sm-8 col-md-4">
+          <input
+          type="text"
+          class="form-control"
+          formControlName="Calle"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.Calle.touched || submitted) &&
+              FormRegistro.controls.Calle.invalid,
+            'is-valid': FormRegistro.controls.Calle.valid
+          }"
+        />
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.Calle.touched || submitted) &&
+            FormRegistro.controls.Calle.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.Calle.touched || submitted) &&
+            (FormRegistro.controls.Calle.errors?.minlength ||
+              FormRegistro.controls.Calle.errors?.maxlength)
+          ">
+            Dato texto, 5 a 50 caracteres.
+          </div>
+        </div>
+
+        <!--campo NumeroCalle-->
+        <div class="col-sm-4 col-md-2"><label class="col-form-label" for="NumeroCalle">
+        Calle Numero<span class="text-danger">*</span>:
+      </label>
+        </div>
+        <div class="col-sm-8 col-md-4">
+          <input
+          type="text"
+          name="NumeroCalle"
+          class="form-control inputMedio"
+          formControlName="NumeroCalle"
+          [ngClass]="{
+            'is-invalid':
+              (FormRegistro.controls.NumeroCalle.touched || submitted) &&
+              FormRegistro.controls.NumeroCalle.errors,
+            'is-valid': FormRegistro.controls.NumeroCalle.valid
+          }"
+        />
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.NumeroCalle.touched || submitted) &&
+            FormRegistro.controls.NumeroCalle.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            FormRegistro.controls.NumeroCalle.errors?.pattern
+          ">
+            Dato numérico, 1 a 5 dígitos.
+          </div>
+        </div>
+
+      </div>
+
+
+      <div class="row">
+        <div class="subtitulo col"><i class="fas fa-clipboard-list"></i>Datos Internos</div>
+      </div>
+
+
+
+
+      <div class="row">
+
+        <!--campo FechaIngreso-->
+        <div class="col-sm-4 col-md-2">
+          <label class="col-form-label"
+        >Fecha de Ingreso<span class="text-danger">*</span>:
+        </label>
+        </div>
+        <div class="col-sm-8 col-md-4">
+          <div class="input-group inputMedio">
+            <input
+        class="form-control"
+        placeholder="dd/mm/aaaa"
+        formControlName="FechaIngreso"
+        ngbDatepicker
+        [minDate]="{year: 1900, month: 1, day: 1}"
+        [maxDate]="{year: 2031, month: 1, day: 1}"
+        #RefFechaIngreso="ngbDatepicker"
+        [ngClass]="{ 'is-invalid': (FormRegistro.controls.FechaIngreso.touched || submitted) &&
+                FormRegistro.controls.FechaIngreso.errors,
+            'is-valid': FormRegistro.controls.FechaIngreso.valid }"
+      />
+            <div class="input-group-append">
+              <button type="button"
+          class="btn btn-outline-secondary"
+          (click)="RefFechaIngreso.toggle()"
+
+        >
+          <i class="fa fa-calendar" aria-hidden="true"></i>
+        </button>
+            </div>
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.FechaIngreso.touched || submitted) &&
+            FormRegistro.controls.FechaIngreso.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            FormRegistro.controls.FechaIngreso.errors?.ngbDate
+          ">
+            Dato fecha, formato dd/mm/aaaa. Año >= 1900
+          </div>
+        </div>
+        <!--campo FechaEgreso-->
+        <div class="col-sm-4 col-md-2"><label class="col-form-label"
+        >Fecha de Egreso:</label>
+        </div>
+        <div class="col-sm-8 col-md-4">
+          <div class="input-group inputMedio">
+            <input
+        class="form-control"
+        placeholder="dd/mm/aaaa"
+        formControlName="FechaEgreso"
+        ngbDatepicker
+        [minDate]="{year: 1900, month: 1, day: 1}"
+        [maxDate]="{year: 2031, month: 1, day: 1}"
+        #RefFechaEgreso="ngbDatepicker"
+        [ngClass]="{ 'is-invalid': (FormRegistro.controls.FechaEgreso.touched || submitted) &&
+                FormRegistro.controls.FechaEgreso.errors,
+            'is-valid': FormRegistro.controls.FechaEgreso.valid  }"
+      />
+            <div class="input-group-append">
+              <button type="button"
+          class="btn btn-outline-secondary"
+          (click)="RefFechaEgreso.toggle()"
+
+        >
+          <i class="fa fa-calendar" aria-hidden="true"></i>
+        </button>
+            </div>
+          </div>
+          <div class="validacion" *ngIf="
+            (FormRegistro.controls.FechaEgreso.touched || submitted) &&
+            FormRegistro.controls.FechaEgreso.errors?.required
+          ">
+            Dato requerido.
+          </div>
+          <div class="validacion" *ngIf="
+            FormRegistro.controls.FechaEgreso.errors?.ngbDate
+          ">
+            Dato fecha, formato dd/mm/aaaa. Año >= 1900
+          </div>
+        </div>
+
+      </div>
+
+      <!--campo activo-->
+      <div class="row">
+        <div class="col-sm-4 col-md-2"><label class="col-form-label" for="Activo"
+        >Activo:</label>
+        </div>
+        <div class="col-sm-8 col-md-4">
+          <select name="Activo" class="form-control  inputChico"
+          formControlName="Activo"  [attr.disabled]="true">
+          <option *ngFor="let opt of OpcionesActivo" [ngValue]="opt.Id">
+            ‌{{ opt.Nombre }}
+          </option>
+        </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Botones Grabar, Cancelar/Volver' -->
+    <hr>
+    <div class="row botones">
+      <button type="button"
+      *ngIf="AccionABMC !== 'C'"
+      class="btn btn-primary"
+      (click)="Grabar()"
+    >
+      <div class="fas fa-check"></div> Grabar
+    </button>
+
+      <button type="button" class="btn btn-warning" (click)="Volver()">
+      <div class="fas fa-undo"></div>
+      {{ AccionABMC == "C" ? "Volver" : "Cancelar" }}
+    </button>
+    </div>
+
+    <!--Mensaje: Revisar los datos ingresados...-->
+    <div *ngIf="submitted && FormRegistro.invalid" class="row alert alert-danger mensajesAlert">
+      <div class="fas fa-exclamation-sign"></div>{{ Mensajes["RD"] }}
+    </div>
+  </div>
+</form>
